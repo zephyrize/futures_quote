@@ -44,7 +44,7 @@ flowchart TB
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Created: fq_create / fq::Client 构造
+  [*] --> Created
   Created --> Opened: fq_open / open
   Opened --> Worker: fq_start / start
   Worker --> Stopping: fq_request_stop
@@ -52,8 +52,10 @@ stateDiagram-v2
   Opened --> CallerDriven: fq_poll 或 fq_feed 或 fq_replay_pcap
   CallerDriven --> CallerDriven: 同一线程继续驱动
   CallerDriven --> Opened: 停止驱动并重新 open
-  Opened --> [*]: fq_destroy / 析构
+  Opened --> [*]
 ```
+
+图中的 `Created` 表示 `fq_create` 或 `fq::Client` 构造完成；从 `Opened` 结束表示调用 `fq_destroy` 或 C++ 析构。
 
 `open` 构造适配器并预分配有限缓存，不创建 UDP socket。`start` 先创建 Receiver 并加组，再建立一个工作线程，在循环内反复调用 `poll_once(2)`；回调在该线程同步执行。`poll` 由调用线程驱动，第一次调用才按需建立 Receiver；一次调用完成就绪 socket 的收包及各适配器的计时处理，回调也在调用线程执行。`fq_dump` 使用 `poll(2)` 循环。`feed` 接外部 UDP payload，`replay_pcap` 读经典 PCAP，这两种测试/接入入口也由调用线程同步执行。
 

@@ -13,7 +13,7 @@ CME的模板文件以官方为主，该项目会不定期检查本地文件与�
 
 ## 1. 编译与离线运行
 
-需要 CMake ≥ 3.16、C++11 编译器和 POSIX 平台。macOS 可本地开发；Linux 为部署目标，Linux CI 配置已提供。依赖源码和 CME 生成头文件均已包含，普通构建无需 Java、联网或额外安装 yaml-cpp。
+以下本地测试环境基于macOS，CMake ≥ 3.16、C++11 standard
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -47,7 +47,7 @@ cp config/example.yaml config/local.yaml
 ./build/fq_dump --config config/local.yaml --duration 30 --rate 1000
 ```
 
-配置模板已填写附件中的 CME 384 铂钯、LME 307/807 及 Core 112/612/614 地址。**现场地址与配置一致、回传内容保持受支持的交易所原生编码时，客户只需修改本机 IP**；若供应商调整组播地址、源地址或端口，则修改对应 endpoint。`source_ip` 存在时使用源指定组播；删除该项则使用 ASM。无需另外运行 `join_multicast`，也不使用混杂模式或原始网卡抓包。
+配置模板已填写附件中的 CME 384 铂钯、LME 307/807 及 Core 112/612/614 地址。**使用时需修改本机 IP**；endpoint对应行情组播地址。`source_ip` 存在时使用源指定组播；删除该项则使用 ASM。无需另外运行 `join_multicast`，也不使用混杂模式或原始网卡抓包。
 
 `--check-config` 校验字段、范围、协议版本和适配器，不能证明网络已经连通。实际启动还会检查 IP 是否属于本机、socket 和加组是否成功。配置及排障详见 [配置与运行](docs/configuration.md)。
 
