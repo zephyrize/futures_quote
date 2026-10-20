@@ -1,0 +1,41 @@
+# LMEsource v4.13 Core L2 现场模板：112 实时、612 盘口刷新、614 成交回放。
+# 目的组及 UDP 端口来自 LME Systems Connectivity Guide v5.4 Production 表。
+# 中转环境请先用 tcpdump 核对目的组/端口；首次使用 ASM，确认源 IP 后可逐端点加 source_ip。
+config_version: 1
+network:
+  # 必填：实际收到这些组播包的本机网卡 IPv4，例如 ens2f0 的地址。
+  interface_ip: REPLACE_WITH_LOCAL_IPV4
+  receive_buffer_bytes: 16777216
+  receive_batch_max: 16
+
+feeds:
+  - id: 112
+    protocol: lmesource_v4
+    revision: "4.13"
+    # 112 与 612 共用一个盘口适配器；612 的 203 LastSeqNum 是 112 的恢复水位。
+    channel_id: 112
+    depth: 15
+    max_instruments: 8192
+    recovery_buffer_bytes: 67108864
+    raw_messages: false
+    publish_invalid_books: false
+    endpoints:
+      - {role: incremental, line: A, group: 224.0.240.13, port: 61000}
+      - {role: incremental, line: B, group: 224.0.241.13, port: 61000}
+      - {role: snapshot, line: A, group: 224.0.240.14, port: 61000}
+      - {role: snapshot, line: B, group: 224.0.241.14, port: 61000}
+    # 可选：只打印指定合约 ID；不填则接收该通道所有合约。
+    # subscriptions:
+    #   instrument_ids: [123456]
+
+  - id: 614
+    protocol: lmesource_v4
+    revision: "4.13"
+    # 成交回放有独立包序号，只输出 FQ_TRADE；不参与 112 盘口恢复。
+    channel_id: 614
+    max_instruments: 8192
+    recovery_buffer_bytes: 32768
+    raw_messages: false
+    endpoints:
+      - {role: snapshot, line: A, group: 224.0.240.18, port: 61000}
+      - {role: snapshot, line: B, group: 224.0.241.18, port: 61000}

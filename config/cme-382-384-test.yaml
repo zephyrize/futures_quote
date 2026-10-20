@@ -1,0 +1,69 @@
+# 服务器联调模板：382 原油相关通道 + 384 铂钯相关通道，均为 A 线。
+# 地址/端口来自用户提供的九个组播地址及 2024-06-02 的 PROD config.xml。
+# 这是网络配置参考，不证明测试机仍使用这些端口或源 IP；上线前逐条向接入方核实。
+# REPLACE_WITH_* 是故意设置的占位值，未填写前 --check-config 应报错。
+# 若现场确认使用 ASM，可删除六条 source_ip；SSM 则逐条填实际到达本机的源 IP。
+# 现场报文还须是当前 SDK 支持的 CME 官方 MDP 3.0 schema 1/v13。
+config_version: 1
+network:
+  interface_ip: REPLACE_WITH_LOCAL_IPV4
+  receive_buffer_bytes: 16777216
+  receive_batch_max: 16
+
+feeds:
+  - id: 382
+    protocol: cme_mdp3
+    revision: "13"
+    channel_id: 382
+    depth: 10
+    max_instruments: 8192
+    recovery_buffer_bytes: 16777216
+    raw_messages: false
+    publish_invalid_books: false
+    endpoints:
+      - role: incremental
+        line: A
+        group: 224.0.31.130
+        port: 14382
+        source_ip: REPLACE_WITH_382_INCREMENTAL_SOURCE_IPV4
+      - role: snapshot
+        line: A
+        group: 224.0.31.151
+        port: 14382
+        source_ip: REPLACE_WITH_382_SNAPSHOT_SOURCE_IPV4
+      - role: definition
+        line: A
+        group: 224.0.31.172
+        port: 14382
+        source_ip: REPLACE_WITH_382_DEFINITION_SOURCE_IPV4
+    # 初次联调不设置 subscriptions，先确认收包、定义和有效盘口。
+    # 获得实际 SecurityGroup/Symbol 后可启用，例如按合约定义实际值过滤。
+
+  - id: 384
+    protocol: cme_mdp3
+    revision: "13"
+    channel_id: 384
+    depth: 10
+    max_instruments: 4096
+    recovery_buffer_bytes: 16777216
+    raw_messages: false
+    publish_invalid_books: false
+    endpoints:
+      - role: incremental
+        line: A
+        group: 224.0.31.132
+        port: 14384
+        source_ip: REPLACE_WITH_384_INCREMENTAL_SOURCE_IPV4
+      - role: snapshot
+        line: A
+        group: 224.0.31.153
+        port: 14384
+        source_ip: REPLACE_WITH_384_SNAPSHOT_SOURCE_IPV4
+      - role: definition
+        line: A
+        group: 224.0.31.174
+        port: 14384
+        source_ip: REPLACE_WITH_384_DEFINITION_SOURCE_IPV4
+    # 如仅输出铂钯相关定义/行情，可按现场定义启用：
+    # subscriptions:
+    #   security_groups: [PL, PD]
