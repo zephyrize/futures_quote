@@ -1,0 +1,31 @@
+{
+  "verified_on": "2026-10-16",
+  "scope": "CME MDP 3.0 Core SBE Production XML",
+  "acquisition": "Downloaded using logged-in Chrome from CME Production/Templates; user moved downloads to template/.",
+  "status": "all_bytes_identical",
+  "schema_id": 1,
+  "version": 13,
+  "description": "20230411",
+  "files": [
+    {
+      "path": "template/templates_FixBinary.xml",
+      "bytes": 146935,
+      "md5": "25913f3105137fa784f80d62f24c5fbb",
+      "sha256": "f45ebadf65ccb1a2d416f00ee755480072ecff030970cc170a78540541d78d60",
+      "source_url": "https://www.cmegroup.com/ftp/SBEFix/Production/Templates/templates_FixBinary.xml"
+    },
+    {
+      "path": "template/templates_v13.xml",
+      "bytes": 146935,
+      "md5": "25913f3105137fa784f80d62f24c5fbb",
+      "sha256": "f45ebadf65ccb1a2d416f00ee755480072ecff030970cc170a78540541d78d60",
+      "source_url": "https://www.cmegroup.com/ftp/SBEFix/Production/Templates/templates_v13.xml"
+    },
+    {
+      "path": "schemas/cme/templates_v13.xml",
+      "bytes": 146935,
+      "md5": "25913f3105137fa784f80d62f24c5fbb",
+      "sha256": "f45ebadf65ccb1a2d416f00ee755480072ecff030970cc170a78540541d78d60"
+    }
+  ]
+}
