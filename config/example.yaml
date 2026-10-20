@@ -1,0 +1,116 @@
+# 实时组播接入模板：复制为 config/local.yaml，填写测试机和现场通道信息后使用。
+# 本文件中的地址来自历史现场回传资料，不是已核验的交易所测试环境地址。
+# 192.0.2.10 是示例占位地址，必须替换为本机实际接收行情的网卡 IPv4。
+# 接入 CME Cert / New Release 等环境时，应使用该环境的通道清单和 schema；
+# 生产 schema 已核验并不表示测试环境使用相同版本，不能只改 revision 来兼容新版。
+# 只测试 CME 时，删除下方整个 LME feed；不要保留没有开通的端点。
+# 离线演示使用 config/replay.yaml，不需要实际加组或修改本机网络。
+# 配置只接受本文已有的字段；请勿自行添加 environment、enabled、username 等字段。
+
+# 项目配置文件格式版本，固定为 1；与 CME/LME 的协议版本无关。
+config_version: 1
+network:
+  # 必填现场信息：本机行情网卡 IP，不是组播目的地址，也不是上游发包源 IP。
+  # 所有 feeds 共用此网卡；0.0.0.0 仅允许离线处理，不能启动实时接收。
+  interface_ip: 192.0.2.10
+  # 每个 UDP socket 请求的内核接收缓冲，单位字节，当前为 16 MiB。
+  # 系统可能限制该值；若 macOS 报 SO_RCVBUF 失败，可先尝试 262144。
+  receive_buffer_bytes: 16777216
+  # 单个 socket 每轮最多读取的包数（1–64）；不会等待凑够一批才解码。
+  receive_batch_max: 16
+
+feeds:
+  # CME MDP 3.0：当前示例为通道 384 的铂/钯 MBP（按价格档位聚合的盘口）。
+  # id 为应用自定义标识，同一配置内必须非零且唯一，不要求等于 channel_id。
+  - id: 1
+    # 内置官方协议适配器；不接受供应商重新编码的私有报文。
+    protocol: cme_mdp3
+    # 字符串形式的协议版本；当前实现仅接受 schemaId=1/version=13。
+    revision: "13"
+    # 必填现场信息：交易所逻辑通道号，三种端点应属于同一逻辑通道。
+    channel_id: 384
+    # 每侧盘口容量（1–64），应覆盖通道实际所需深度；不是网络订阅档数。
+    depth: 10
+    # 当前 feed 可保存的已见合约数上限；过滤业务输出不会减少全部通道状态的需要。
+    max_instruments: 4096
+    # 应用层恢复缓存，单位字节；区别于 network 中的内核 socket 接收缓冲。
+    # 当前 16 MiB 可容纳 1024 个 16 KiB 槽；覆盖时长取决于行情速率。
+    recovery_buffer_bytes: 16777216
+    # 是否额外回调已识别的原始业务消息；不是保存 PCAP，也不会启用未实现的模板。
+    raw_messages: false
+    # 调试开关：是否发布无效盘口；正常消费保持 false，并检查盘口有效标志。
+    publish_invalid_books: false
+
+    # 必填现场信息：逐条取得 role、A/B 线、目的组播 IP、UDP 端口和实际源 IP。
+    # source_ip 存在时使用 SSM（源指定组播）；确认使用 ASM 时删除该字段。
+    # source_ip 不能填本机 IP 或 0.0.0.0，也不要为绕过加组错误随意删除源限制。
+    # A/B 属于同一个 feed，接收器自动仲裁；开通 B 线后添加对应端点，不能猜地址。
+    # 同一个 group/port 组合不能在配置中重复；同端口不同组播地址可以共用 socket。
+    endpoints:
+      # 实时增量：盘口变化、成交及其他消息。
+      - role: incremental
+        line: A
+        group: 224.0.31.132
+        port: 14384
+        source_ip: 10.123.100.21
+      # MBP 快照：用于中途启动和丢包后的盘口恢复，必须是模板 52 对应的流。
+      # 模板 53 的 MBO 快照不能替代这里的 MBP 快照。
+      - role: snapshot
+        line: A
+        group: 224.0.31.153
+        port: 14384
+        source_ip: 10.123.100.21
+      # 合约定义：建立 SecurityID、Symbol、SecurityGroup、深度等属性映射。
+      - role: definition
+        line: A
+        group: 224.0.31.174
+        port: 14384
+        source_ip: 10.123.100.21
+
+    subscriptions:
+      # 业务输出过滤：PL=铂、PD=钯；必须与定义消息中的 SecurityGroup 一致。
+      # 若测试通道是其他品种，请替换此列表；初次排查也可删除整个 subscriptions。
+      # 还支持 instrument_ids 或 symbols；不同类别同时填写时取交集。
+      # 此过滤不减少底层整通道收包；按 group/symbol 过滤需要先收到合约定义。
+      security_groups: [PL, PD]
+
+  # 这个 LME feed 示例使用 LBMA 铂/钯拍卖参考价；Core 深度见专用现场模板。
+  # 如果未开通这组数据或仅做 CME 测试，请删除整个 id: 2 配置块。
+  - id: 2
+    protocol: lmesource_v4
+    # 当前实现仅接受 4.13；更高修订版需要先完成协议比对和适配。
+    revision: "4.13"
+    # 当前固定为实时通道 307；配套刷新通道 807 以 snapshot 端点加入同一 feed。
+    channel_id: 307
+    # LME 当前用于限制刷新阶段保存的参考价条目数。
+    max_instruments: 4096
+    # LME 恢复缓存每槽保存一条消息；与 CME 每槽一个包的口径不同。
+    recovery_buffer_bytes: 16777216
+    raw_messages: false
+    endpoints:
+      # 实时 307 的 A/B 线；以下目的组、端口及源地址均需按测试现场清单核实。
+      - role: incremental
+        line: A
+        group: 224.0.240.119
+        port: 61000
+        source_ip: 103.183.219.33
+      - role: incremental
+        line: B
+        group: 224.0.241.119
+        port: 61000
+        source_ip: 103.183.219.33
+      # 刷新 807 的 A/B 线，用于建立参考价状态和衔接实时消息水位。
+      - role: snapshot
+        line: A
+        group: 224.0.240.120
+        port: 61000
+        source_ip: 103.183.219.33
+      - role: snapshot
+        line: B
+        group: 224.0.241.120
+        port: 61000
+        source_ip: 103.183.219.33
+    subscriptions:
+      # LME 商品代码与 CME SecurityGroup 不同：铂为 PT，钯为 PD。
+      # 此通道按拍卖时段发布参考价，不保证启动后立即有价格更新。
+      commodities: [PT, PD]

@@ -1,0 +1,29 @@
+# 可离线使用；interface_ip=0.0.0.0 禁止启动现场接收。
+config_version: 1
+network:
+  interface_ip: 0.0.0.0
+feeds:
+  - id: 1
+    protocol: cme_mdp3
+    revision: "13"
+    channel_id: 384
+    depth: 10
+    recovery_buffer_bytes: 1048576
+    max_instruments: 128
+    raw_messages: true
+    endpoints:
+      - {role: incremental, group: 224.0.31.132, port: 14384}
+      - {role: snapshot, group: 224.0.31.153, port: 14384}
+      - {role: definition, group: 224.0.31.174, port: 14384}
+  - id: 2
+    protocol: lmesource_v4
+    revision: "4.13"
+    channel_id: 307
+    recovery_buffer_bytes: 1048576
+    max_instruments: 128
+    raw_messages: true
+    endpoints:
+      - {role: incremental, group: 224.0.240.119, port: 61000}
+      - {role: incremental, line: B, group: 224.0.241.119, port: 61000}
+      - {role: snapshot, group: 224.0.240.120, port: 61000}
+      - {role: snapshot, line: B, group: 224.0.241.120, port: 61000}

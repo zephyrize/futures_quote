@@ -1,0 +1,9 @@
+# 只供 fq_bench 的合成报文测量使用，不建立网络连接。
+config_version: 1
+feeds:
+  - id: 1
+    protocol: cme_mdp3
+    revision: "13"
+    channel_id: 384
+    recovery_buffer_bytes: 32768
+    max_instruments: 16
