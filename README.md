@@ -1,17 +1,11 @@
 # futures_quote
 
-> **该项目仅供测试环境的行情接入、解码与接口联调，请勿用于生产环境。** 项目重点是LME/CME/SGX(待实现)组播接入和解码；完整订单簿、断线重连后的历史补全及严格快照加增量恢复尚无完整保证，需要使用方自行实现和验证。
+> **该项目仅供测试环境的行情接入、解码与接口联调，请勿用于生产环境。** 项目重点是LME/CME/SGX组播接入和解码；完整订单簿、断线重连后的历史补全及严格快照加增量恢复尚无完整保证，待后续支持。
 
 C++11 统一行情 SDK：同一套 client 可用于程序内接入、动态库/静态库分发和命令行行情打印。
 
-CME的模板文件以官方为主，该项目会不定期检查本地文件与官网的文件一致性，但具有滞后性。
-2026-10-16 已下载 CME 官方 Production 目录的两份 schema，与项目 v13 副本逐字节完全一致，无需更新 XML；详见 [核验记录](docs/cme-schema-verification.md)。
-
-下面步骤针对于没有行情环境下的本地模拟测试，方案为在本地内存中生成模拟行情，以验证decode和replay功能。
-如果有行情组播测试环境，可参考[CME / LME 行情接入与解码指南](docs/market-data-guide.zh-CN.md) 打包程序到服务器中，修改配置文件进行真实行情测试。
-
-
-## 1. 编译与离线运行
+## 1. 本地编译与验证
+在没有组播行情的本机环境中，该项目提供了一些mock程序，在内存中生成一些fake数据以验证行情decode和replay的功能。
 
 以下本地测试环境基于macOS，CMake ≥ 3.16、C++11 standard
 
@@ -39,21 +33,24 @@ python3 tools/make_demo.py build/demo.pcap
 `-DFQ_BUILD_APPS=OFF`、`-DFQ_BUILD_TESTS=OFF` 可关闭工具或测试。`-DFQ_SANITIZE=ON` 启用 ASan/UBSan；不要用该构建测延时。
 
 ## 2. 配置组播并收行情
-
+在测试机环境中，参考[CME / LME 行情接入与解码指南](docs/market-data-guide.zh-CN.md) 1.1进行网络环境配置，然后执行`./scripts/package.sh`打包本地程序，并手动上传到服务器中，在服务器执行下面脚本
 ```sh
+./unpack.sh
+cd futures_quote
+./scripts/build.sh
 cp config/example.yaml config/local.yaml
 # 编辑 local.yaml 中 network.interface_ip，填写行情网卡的本机 IPv4
 ./build/fq_dump --config config/local.yaml --check-config
 ./build/fq_dump --config config/local.yaml --duration 30 --rate 1000
 ```
 
-配置模板已填写附件中的 CME 384 铂钯、LME 307/807 及 Core 112/612/614 地址。**使用时需修改本机 IP**；endpoint对应行情组播地址。`source_ip` 存在时使用源指定组播；删除该项则使用 ASM。无需另外运行 `join_multicast`，也不使用混杂模式或原始网卡抓包。
+项目中实现了 CME C-382/384和LME C-112/612/614的解码逻辑，具体参考src/cme.cpp和src/lme.cpp。**使用时需修改本机 IP**；endpoint对应行情组播地址。`source_ip` 存在时使用源指定组播；删除该项则使用 ASM。无需另外运行 `join_multicast`，也不使用混杂模式或原始网卡抓包。
 
 `--check-config` 校验字段、范围、协议版本和适配器，不能证明网络已经连通。实际启动还会检查 IP 是否属于本机、socket 和加组是否成功。配置及排障详见 [配置与运行](docs/configuration.md)。
 
-CentOS 7 / GCC 4.8.5 无外网服务器联调 382、384 通道，使用 [离线部署步骤](docs/offline-centos7.md) 和 [双通道配置模板](config/cme-382-384-test.yaml)。本地执行 `./scripts/package.sh output`，上传生成的压缩包、校验文件和 `unpack.sh`；服务器执行 `./unpack.sh`、`./scripts/build.sh`、`./scripts/run.sh`。
-
 `--rate` 在回调入队前按 feed 限制每秒进入打印队列的普通事件数，不减少 SDK 的解析和回调；状态和缺口始终尝试打印。默认 100，`--rate 0` 打印全部事件。若打印队列仍耗尽，会计数并继续接收，丢失的只是终端打印样本。生产程序应直接接回调，不依赖终端文本。
+
+    CME的模板文件以官方为主，该项目会不定期检查本地文件与官网的文件一致性，但具有滞后性。
 
 ## 3. 在项目中使用
 
